@@ -5,8 +5,8 @@ const startButton = document.getElementById("start");
 const stopButton = document.getElementById("stop");
 const clear = document.getElementById("clear");
 const showStorage = document.getElementById("show-storage");
-const sites = document.getElementById("sites");
 const timeSpent = document.getElementById("time-spent");
+const siteList = document.getElementById("container-sites");
 let startTime;
 let stopTime;
 
@@ -17,16 +17,83 @@ function siteListUpdate() {
 
   chrome.storage.sync.get(null, function (items) {
     storageCache = items;
-    let storageValues = Object.values(storageCache);
+    let storedSites = storageCache.sites;
+    console.log("storedSites:");
+    console.log(storedSites);
 
-    while (sites.lastElementChild) {
-      sites.removeChild(sites.lastElementChild);
+    // if statement in case storedSites is undefined
+    if (storedSites !== undefined) {
+      while (siteList.lastElementChild) {
+        siteList.removeChild(siteList.lastElementChild);
+      }
+
+      for (let key in storedSites) {
+        let listElement = document.createElement("dl");
+        let term = document.createElement("dt");
+        let description = document.createElement("dd");
+        let url = storedSites[key].url;
+        let time = storedSites[key].time;
+
+        term.innerHTML = url;
+        description.innerHTML = time;
+        listElement.className = "list-element";
+        listElement.appendChild(term);
+        listElement.appendChild(description);
+        siteList.appendChild(listElement);
+      }
     }
+  });
+}
 
-    for (let val of storageValues) {
-      let newUrl = document.createElement("li");
-      newUrl.innerHTML = val.url;
-      sites.appendChild(newUrl);
+function addSiteToStorage(link) {
+  let storageCache = {};
+
+  chrome.storage.sync.get(null, function (items) {
+    storageCache = items;
+    let storedSites = storageCache.sites;
+
+    // if statement in case storedSites is undefined
+    if (storedSites === undefined) {
+      chrome.storage.sync.set({
+        ...storageCache,
+        sites: {
+          site1: { url: link, time: 0 },
+        },
+      });
+    } else {
+      let allSiteValues = Object.values(storedSites);
+      let storedUrls = [];
+
+      for (let obj of allSiteValues) {
+        storedUrls.push(obj.url);
+      }
+
+      if (storedUrls.includes(link)) {
+        alert("This website is already tracked.");
+      } else {
+        let allKeys = Object.keys(storedSites);
+        let allKeyNums = [];
+
+        allKeys.map((key) => {
+          allKeyNums.push(parseInt(key[key.length - 1]));
+        });
+
+        let newNumber = Math.max(allKeyNums) + 1;
+        let newSiteKey = "site" + newNumber;
+
+        if (newNumber <= 5) {
+          // ES6 Computed Property Names - use []
+          chrome.storage.sync.set({
+            ...storageCache,
+            sites: {
+              ...storedSites,
+              [newSiteKey]: { url: link, time: 0 },
+            },
+          });
+        } else {
+          alert("You can only track up to 5 sites.");
+        }
+      }
     }
   });
 }
@@ -44,37 +111,6 @@ trackButton.addEventListener("click", () => {
     addSiteToStorage(tabs[0].url);
   });
 });
-
-function addSiteToStorage(link) {
-  let storageCache = {};
-
-  chrome.storage.sync.get(null, function (items) {
-    storageCache = items;
-    let storageKeys = Object.keys(storageCache);
-
-    if (storageKeys.length === 0) {
-      chrome.storage.sync.set({
-        site1: { url: link },
-      });
-    } else {
-      let newKey = storageKeys[storageKeys.length - 1];
-      let lastIndex = newKey.length - 1;
-      let lastNumber = parseInt(newKey[lastIndex]);
-      let newNumber = lastNumber + 1;
-
-      if (newNumber <= 5) {
-        newKey = newKey.slice(0, lastIndex) + newNumber;
-
-        // ES6 Computed Property Names - use []
-        chrome.storage.sync.set({
-          [newKey]: { url: link },
-        });
-      } else {
-        alert("You can only track up to 5 sites.");
-      }
-    }
-  });
-}
 
 startButton.addEventListener("click", () => {
   startTime = Date.now();
