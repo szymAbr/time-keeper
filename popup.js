@@ -51,14 +51,16 @@ function addSiteToStorage(link) {
   chrome.storage.sync.get(null, function (items) {
     storageCache = items;
     let storedSites = storageCache.sites;
+    const timeNow = Date.now();
 
     // if statement in case storedSites is undefined
     if (storedSites === undefined) {
       chrome.storage.sync.set({
-        ...storageCache,
         sites: {
           site1: { url: link, time: 0 },
         },
+        lastSite: link,
+        startTime: timeNow,
       });
     } else {
       let allSiteValues = Object.values(storedSites);
@@ -78,7 +80,8 @@ function addSiteToStorage(link) {
           allKeyNums.push(parseInt(key[key.length - 1]));
         });
 
-        let newNumber = Math.max(allKeyNums) + 1;
+        // let newNumber = Math.max(allKeyNums) + 1;
+        let newNumber = allKeyNums[allKeyNums.length - 1] + 1;
         let newSiteKey = "site" + newNumber;
 
         if (newNumber <= 5) {
@@ -89,9 +92,14 @@ function addSiteToStorage(link) {
               ...storedSites,
               [newSiteKey]: { url: link, time: 0 },
             },
+            lastSite: link,
+            startTime: timeNow,
           });
         } else {
           alert("You can only track up to 5 sites.");
+          console.log(`storageCache: ${storageCache}`);
+          console.log(`allKeyNums: ${allKeyNums}`);
+          console.log(`newNumber: ${newNumber}`);
         }
       }
     }

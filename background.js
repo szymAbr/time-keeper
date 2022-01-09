@@ -1,45 +1,109 @@
 "use strict";
 
-// chrome.runtime.onInstalled.addListener(() => {});
+let storageCache = {};
+let timeNow = 0;
+let currentSite = "";
+let lastSite = "";
 
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
   if (changeInfo.status === "complete") {
-    let time = Date.now();
-    let storageCache = {};
+    timeNow = Date.now();
+    currentSite = tab.url;
 
     chrome.storage.sync.get(null, function (items) {
       storageCache = items;
-      let currentSite = tab.url;
+      lastSite = storageCache.lastSite;
+      const storedSites = storageCache.sites;
 
-      if (currentSite === storageCache.currSite) {
-        console.log("same site again");
-      } else {
-        let storedSites = storageCache.sites;
-
-        if (storedSites !== undefined) {
-          let allSiteValues = Object.values(storedSites);
-          let storedUrls = [];
-
-          for (let obj of allSiteValues) {
-            if (obj.url) storedUrls.push(obj.url);
-          }
-
-          if (storedUrls.includes(currentSite)) {
-            console.log("currentSite:");
-            console.log(currentSite);
-            console.log("storageCache.currSite:");
-            console.log(storageCache.currSite);
-            chrome.storage.sync.set({
-              ...storageCache,
-              currSite: currentSite,
-              timeStart: time,
-            });
-            // start tracking time for this site
-            // save tracked time in storage, as part of the site object
-            // { site1: {url: ..., time: ...} }
-          }
-        }
+      if (currentSite !== lastSite && storedSites) {
+        storageUpdate(storedSites);
       }
     });
   }
 });
+
+chrome.tabs.onActivated.addListener(function (activeInfo) {
+  timeNow = Date.now();
+  const tabId = activeInfo.tabId;
+  const windowId = activeInfo.windowId;
+
+  chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
+    currentSite = tabs[0].url;
+  });
+
+  chrome.storage.sync.get(null, function (items) {
+    storageCache = items;
+    const storedSites = storageCache.sites;
+    const lastTab = storageCache.lastTabId;
+    const lastWindow = storageCache.lastWindowId;
+
+    if (storedSites) {
+      if (tabId !== lastTab || windowId !== lastWindow) {
+        storageUpdate(storedSites);
+      }
+    }
+
+    chrome.storage.sync.set({
+      ...storageCache,
+      lastTabId: tabId,
+      lastWindowId: windowId,
+    });
+  });
+});
+
+function storageUpdate(storedSites) {
+  console.log(`currentSite: ${currentSite}`);
+  for (let site in storedSites) {
+    console.log(`----for loop----site: ${site}`);
+
+    if (storedSites[site].url === lastSite) {
+      const matchingSite = storedSites[site];
+      const matchingSiteTime = storedSites[site].time;
+      const newTime = matchingSiteTime + (timeNow - storageCache["startTime"]);
+
+      chrome.storage.sync.set(
+        {
+          ...storageCache,
+          sites: {
+            ...storedSites,
+            [site]: {
+              ...matchingSite,
+              time: newTime,
+            },
+          },
+        },
+        function () {
+          chrome.storage.sync.get(null, function (items) {
+            storageCache = items;
+            storedSites = storageCache.sites;
+
+            chrome.storage.sync.set(
+              {
+                ...storageCache,
+                lastSite: currentSite,
+                startTime: timeNow,
+              },
+              function () {
+                chrome.storage.sync.get(null, function (items) {
+                  storageCache = items;
+                });
+
+                console.log(storageCache);
+              }
+            );
+          });
+        }
+      );
+
+      break;
+    } else {
+      chrome.storage.sync.set({
+        ...storageCache,
+        lastSite: currentSite,
+        startTime: timeNow,
+      });
+      console.log(storageCache);
+      console.log("site not in storage");
+    }
+  }
+}
