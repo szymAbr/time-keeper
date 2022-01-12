@@ -4,10 +4,12 @@ let storageCache = {};
 let timeNow = 0;
 let currentSite = "";
 let lastSite = "";
+let currentTabId = 0;
 
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
   if (changeInfo.status === "complete") {
     timeNow = Date.now();
+    currentTabId = tabId;
     currentSite = tab.url;
 
     chrome.storage.sync.get(null, function (items) {
@@ -19,47 +21,59 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
         storageUpdate(storedSites);
       }
     });
+
+    chrome.storage.sync.set({
+      ...storageCache,
+      lastSite: currentSite,
+      startTime: timeNow,
+      lastTabId: currentTabId,
+    });
   }
 });
 
-chrome.tabs.onActivated.addListener(function (activeInfo) {
+chrome.tabs.onActivated.addListener(async function (activeInfo) {
   timeNow = Date.now();
-  const tabId = activeInfo.tabId;
-  const windowId = activeInfo.windowId;
+  currentTabId = activeInfo.tabId;
+  const currentWindowId = activeInfo.windowId;
 
-  chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
-    currentSite = tabs[0].url;
+  const tabs = await chrome.tabs.query({
+    active: true,
+    lastFocusedWindow: true,
   });
+
+  currentSite = tabs[0].url;
 
   chrome.storage.sync.get(null, function (items) {
     storageCache = items;
+    lastSite = storageCache.lastSite;
     const storedSites = storageCache.sites;
     const lastTab = storageCache.lastTabId;
     const lastWindow = storageCache.lastWindowId;
 
     if (storedSites) {
-      if (tabId !== lastTab || windowId !== lastWindow) {
+      if (currentTabId !== lastTab || currentWindowId !== lastWindow) {
         storageUpdate(storedSites);
       }
     }
 
     chrome.storage.sync.set({
       ...storageCache,
-      lastTabId: tabId,
-      lastWindowId: windowId,
+      lastSite: currentSite,
+      startTime: timeNow,
+      lastTabId: currentTabId,
+      lastWindowId: currentWindowId,
     });
   });
 });
 
 function storageUpdate(storedSites) {
-  console.log(`currentSite: ${currentSite}`);
   for (let site in storedSites) {
-    console.log(`----for loop----site: ${site}`);
-
     if (storedSites[site].url === lastSite) {
-      const matchingSite = storedSites[site];
+      let matchingSite = storedSites[site];
       const matchingSiteTime = storedSites[site].time;
       const newTime = matchingSiteTime + (timeNow - storageCache["startTime"]);
+
+      matchingSite.time = newTime;
 
       chrome.storage.sync.set(
         {
@@ -68,7 +82,6 @@ function storageUpdate(storedSites) {
             ...storedSites,
             [site]: {
               ...matchingSite,
-              time: newTime,
             },
           },
         },
@@ -87,8 +100,6 @@ function storageUpdate(storedSites) {
                 chrome.storage.sync.get(null, function (items) {
                   storageCache = items;
                 });
-
-                console.log(storageCache);
               }
             );
           });
@@ -97,13 +108,7 @@ function storageUpdate(storedSites) {
 
       break;
     } else {
-      chrome.storage.sync.set({
-        ...storageCache,
-        lastSite: currentSite,
-        startTime: timeNow,
-      });
-      console.log(storageCache);
-      console.log("site not in storage");
+      console.log("last site not in storage");
     }
   }
 }
