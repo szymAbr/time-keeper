@@ -17,6 +17,19 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
       lastSite = storageCache.lastSite;
       const storedSites = storageCache.sites;
 
+      storageCache.currentSite = currentSite;
+
+      chrome.storage.sync.set(
+        {
+          ...storageCache,
+        },
+        function () {
+          chrome.storage.sync.get(null, function (items) {
+            storageCache = items;
+          });
+        }
+      );
+
       if (currentSite !== lastSite && storedSites) {
         storageUpdate(storedSites);
       }
@@ -50,6 +63,19 @@ chrome.tabs.onActivated.addListener(async function (activeInfo) {
     const lastTab = storageCache.lastTabId;
     const lastWindow = storageCache.lastWindowId;
 
+    storageCache.currentSite = currentSite;
+
+    chrome.storage.sync.set(
+      {
+        ...storageCache,
+      },
+      function () {
+        chrome.storage.sync.get(null, function (items) {
+          storageCache = items;
+        });
+      }
+    );
+
     if (storedSites) {
       if (currentTabId !== lastTab || currentWindowId !== lastWindow) {
         storageUpdate(storedSites);
@@ -73,6 +99,7 @@ function storageUpdate(storedSites) {
       const matchingSiteTime = storedSites[site].time;
       const newTime = matchingSiteTime + (timeNow - storageCache["startTime"]);
 
+      storageCache.currentSite = currentSite;
       matchingSite.time = newTime;
 
       chrome.storage.sync.set(

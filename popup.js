@@ -1,14 +1,7 @@
 "use strict";
 
 const trackButton = document.getElementById("track");
-const startButton = document.getElementById("start");
-const stopButton = document.getElementById("stop");
 const clear = document.getElementById("clear");
-const showStorage = document.getElementById("show-storage");
-const timeSpent = document.getElementById("time-spent");
-const siteList = document.getElementById("container-sites");
-let startTime;
-let stopTime;
 
 siteListUpdate();
 
@@ -17,25 +10,41 @@ function siteListUpdate() {
 
   chrome.storage.sync.get(null, function (items) {
     storageCache = items;
-    let storedSites = storageCache.sites;
-    console.log("storedSites:");
-    console.log(storedSites);
+    const storedSites = storageCache.sites;
+    const currentSite = storageCache.currentSite;
+    const currentSiteHeader = document.getElementById("current-site");
+
+    currentSiteHeader.innerText = currentSite;
 
     // if statement in case storedSites is undefined
     if (storedSites !== undefined) {
+      const siteList = document.getElementById("container-sites");
+
       while (siteList.lastElementChild) {
         siteList.removeChild(siteList.lastElementChild);
       }
 
       for (let key in storedSites) {
-        let listElement = document.createElement("dl");
-        let term = document.createElement("dt");
-        let description = document.createElement("dd");
-        let url = storedSites[key].url;
+        const listElement = document.createElement("dl");
+        const term = document.createElement("dt");
+        const description = document.createElement("dd");
+        const url = storedSites[key].url;
         let time = storedSites[key].time;
 
-        term.innerHTML = url;
-        description.innerHTML = time;
+        const milliseconds = time % 1000;
+        time = (time - milliseconds) / 1000;
+        let seconds = time % 60;
+        time = (time - seconds) / 60;
+        let minutes = time % 60;
+        time = (time - minutes) / 60;
+        let hours = time % 60;
+
+        if (hours < 10) hours = "0" + hours;
+        if (minutes < 10) minutes = "0" + minutes;
+        if (seconds < 10) seconds = "0" + seconds;
+
+        term.innerText = url;
+        description.innerText = `${hours}:${minutes}:${seconds}`;
         listElement.className = "list-element";
         listElement.appendChild(term);
         listElement.appendChild(description);
@@ -50,7 +59,7 @@ function addSiteToStorage(link) {
 
   chrome.storage.sync.get(null, function (items) {
     storageCache = items;
-    let storedSites = storageCache.sites;
+    const storedSites = storageCache.sites;
     const timeNow = Date.now();
 
     // if statement in case storedSites is undefined
@@ -118,26 +127,4 @@ trackButton.addEventListener("click", () => {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     addSiteToStorage(tabs[0].url);
   });
-});
-
-startButton.addEventListener("click", () => {
-  startTime = Date.now();
-});
-
-stopButton.addEventListener("click", () => {
-  stopTime = Date.now();
-
-  let timeSpent = stopTime - startTime;
-  let newTimeElement = document.createElement("h3");
-
-  let milliseconds = timeSpent % 1000;
-  timeSpent = (timeSpent - milliseconds) / 1000;
-  let seconds = timeSpent % 60;
-  timeSpent = (timeSpent - seconds) / 60;
-  let minutes = timeSpent % 60;
-  timeSpent = (timeSpent - minutes) / 60;
-  let hours = (timeSpent - minutes) / 60;
-
-  newTimeElement.innerHTML = `You already spent ${hours}h:${minutes}min:${seconds}s on this website.`;
-  document.body.appendChild(newTimeElement);
 });
