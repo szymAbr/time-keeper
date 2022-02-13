@@ -2,22 +2,32 @@ body {
   background-color: #f7f7f7;
 }
 
-.btn-popup {
-  width: 100px;
-  height: 60px;
+button {
   outline: none;
-  margin: 10px;
   border: none;
   border-radius: 8px;
   font-weight: 700;
+}
+
+.btn-popup {
   background-color: #b2caf7a4;
+  width: 100px;
+  height: 60px;
+  margin: 10px;
+}
+
+button:hover {
+  cursor: pointer;
 }
 
 .btn-popup:hover {
-  cursor: pointer;
   box-shadow: 0 12px 16px 0 rgba(0, 0, 0, 0.24),
     0 17px 50px 0 rgba(0, 0, 0, 0.19);
 }
+
+/* .container-sites {
+  display: flex;
+} */
 
 .list-element {
   width: 20rem;
@@ -29,6 +39,20 @@ body {
   border-bottom: 1px solid #0000004d;
   border-top: 1px solid #0000004d;
   font-weight: 700;
+}
+
+.time-and-button {
+  display: flex;
+  align-items: center;
+}
+
+.btn-delete {
+  background-color: rgb(255, 125, 125);
+  margin-left: 5%;
+  border-radius: 50%;
+  font-size: 12px;
+  width: 1.4rem;
+  height: 1.2rem;
 }
 
 .track-current {

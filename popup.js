@@ -25,11 +25,32 @@ function siteListUpdate() {
       }
 
       for (let key in storedSites) {
+        const url = storedSites[key].url;
+        let time = storedSites[key].time;
         const listElement = document.createElement("dl");
         const term = document.createElement("dt");
         const description = document.createElement("dd");
-        const url = storedSites[key].url;
-        let time = storedSites[key].time;
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "btn-delete";
+        deleteButton.innerText = "X";
+        deleteButton.addEventListener("click", () => {
+          const storedSitesArray = Object.entries(storedSites);
+
+          const newSitesArray = storedSitesArray.filter((elem) => {
+            return elem[1].url !== url;
+          });
+
+          const newStoredSites = Object.fromEntries(newSitesArray);
+
+          console.log(newStoredSites);
+
+          chrome.storage.sync.set({
+            ...storageCache,
+            sites: {
+              ...newStoredSites,
+            },
+          });
+        });
 
         const milliseconds = time % 1000;
         time = (time - milliseconds) / 1000;
@@ -47,7 +68,15 @@ function siteListUpdate() {
         description.innerText = `${hours}:${minutes}:${seconds}`;
         listElement.className = "list-element";
         listElement.appendChild(term);
-        listElement.appendChild(description);
+
+        const timeAndButton = document.createElement("div");
+        timeAndButton.className = "time-and-button";
+        timeAndButton.appendChild(description);
+        timeAndButton.appendChild(deleteButton);
+        listElement.appendChild(timeAndButton);
+
+        // listElement.appendChild(description);
+        // listElement.appendChild(button);
         siteList.appendChild(listElement);
       }
     }
