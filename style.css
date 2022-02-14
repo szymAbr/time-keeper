@@ -25,10 +25,6 @@ button:hover {
     0 17px 50px 0 rgba(0, 0, 0, 0.19);
 }
 
-/* .container-sites {
-  display: flex;
-} */
-
 .list-element {
   width: 20rem;
   margin: 0.8rem;
@@ -46,13 +42,13 @@ button:hover {
   align-items: center;
 }
 
-.btn-delete {
-  background-color: rgb(255, 125, 125);
-  margin-left: 5%;
-  border-radius: 50%;
-  font-size: 12px;
-  width: 1.4rem;
-  height: 1.2rem;
+.fa-trash {
+  margin-left: 12%;
+  color: rgb(255, 78, 78);
+}
+
+.fa-trash:hover {
+  cursor: pointer;
 }
 
 .track-current {

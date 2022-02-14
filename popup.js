@@ -30,9 +30,11 @@ function siteListUpdate() {
         const listElement = document.createElement("dl");
         const term = document.createElement("dt");
         const description = document.createElement("dd");
-        const deleteButton = document.createElement("button");
-        deleteButton.className = "btn-delete";
-        deleteButton.innerText = "X";
+
+        const deleteButton = document.createElement("i");
+        deleteButton.classList.add("fa", "fa-trash");
+        listElement.appendChild(deleteButton);
+
         deleteButton.addEventListener("click", () => {
           const storedSitesArray = Object.entries(storedSites);
 
